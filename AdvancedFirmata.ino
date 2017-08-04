@@ -28,6 +28,10 @@
 #include <Servo.h>
 // #include "FirmataStepper.h"
 #include <WickedMotorShield.h>
+#define SERIAL_CLOCK_PIN (2)
+#define SERIAL_LATCH_PIN (7)
+#define SERIAL_DATA_PIN  (12)
+//#define SERIAL_DATA_PIN  (0) // for wildfire
 
 const int stepsPerRevolution = 200;  // change this to fit the number of steps per revolution
                                      // for your motor
@@ -647,9 +651,20 @@ void sysexCallback(byte command, byte argc, byte *argv)
         numSteps = (long)argv[3] | ((long)argv[4] << 7) | ((long)argv[5] << 14);
         stepSpeed = (argv[6] + (argv[7] << 7));
 
+//        digitalWrite(13, HIGH);
+
+        stepSpeed = 1.0f*stepSpeed*0.09549296585; // convert back to RPM
+
+//        Serial1.print("stepDirection = "); Serial1.println(stepDirection);
+//        Serial1.print("numSteps = "); Serial1.println(numSteps);
+//        Serial1.print("stepSpeed = "); Serial1.println(stepSpeed);
+//        Serial1.println();
+        
 		    stepper.setSpeed(stepSpeed);
 		    stepper.step(numSteps);
-		
+
+//        digitalWrite(13, LOW);
+    
 /*		
         if (stepDirection == 0)
         {
@@ -860,6 +875,7 @@ void systemResetCallback()
 
 void setup()
 {
+//  Serial1.begin(115200);
   Firmata.setFirmwareVersion(FIRMATA_MAJOR_VERSION, FIRMATA_MINOR_VERSION);
 
   Firmata.attach(ANALOG_MESSAGE, analogWriteCallback);
@@ -872,6 +888,11 @@ void setup()
 
   Firmata.begin(57600);
   systemResetCallback();  // reset to default config
+  
+  pinMode(SERIAL_CLOCK_PIN, OUTPUT);
+  pinMode(SERIAL_LATCH_PIN, OUTPUT);
+  pinMode(SERIAL_DATA_PIN, OUTPUT);  
+    
 }
 
 /*==============================================================================
