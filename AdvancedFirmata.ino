@@ -659,7 +659,7 @@ void sysexCallback(byte command, byte argc, byte *argv)
 //        Serial1.print("numSteps = "); Serial1.println(numSteps);
 //        Serial1.print("stepSpeed = "); Serial1.println(stepSpeed);
 //        Serial1.println();
-        
+
 		    stepper.setSpeed(stepSpeed);
 		    stepper.step(numSteps);
 
@@ -888,11 +888,13 @@ void setup()
 
   Firmata.begin(57600);
   systemResetCallback();  // reset to default config
+
+  pinMode(12, OUTPUT);
+  pinMode(7, OUTPUT);
+  pinMode(2, OUTPUT);    
+  analogWrite(11, 255);
+  analogWrite(9, 255);
   
-  pinMode(SERIAL_CLOCK_PIN, OUTPUT);
-  pinMode(SERIAL_LATCH_PIN, OUTPUT);
-  pinMode(SERIAL_DATA_PIN, OUTPUT);  
-    
 }
 
 /*==============================================================================
