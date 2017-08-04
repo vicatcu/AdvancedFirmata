@@ -26,7 +26,14 @@
  */
 
 #include <Servo.h>
-#include "FirmataStepper.h"
+// #include "FirmataStepper.h"
+#include <WickedMotorShield.h>
+
+const int stepsPerRevolution = 200;  // change this to fit the number of steps per revolution
+                                     // for your motor
+
+Wicked_Stepper stepper(stepsPerRevolution, M1, M2);
+
 #include <Wire.h>
 #include <Firmata.h>
 
@@ -86,7 +93,8 @@ boolean isI2CEnabled = false;
 signed char queryIndex = -1;
 unsigned int i2cReadDelayTime = 0;  // default delay time between i2c read request and Wire.requestFrom()
 
-FirmataStepper *stepper[MAX_STEPPERS];
+// FirmataStepper *stepper_present[MAX_STEPPERS];
+uint8_t stepper_present[MAX_STEPPERS] = {0};
 byte numSteppers = 0;
 
 Servo servos[MAX_SERVOS];
@@ -607,17 +615,21 @@ void sysexCallback(byte command, byte argc, byte *argv)
 
         directionPin = argv[5]; // or motorPin1 for TWO_WIRE or FOUR_WIRE interface
         stepPin = argv[6]; // // or motorPin2 for TWO_WIRE or FOUR_WIRE interface
+		
+		    stepper_present[deviceNum] = 1;
+		
+/*		
         setPinModeCallback(directionPin, STEPPER);
         setPinModeCallback(stepPin, STEPPER);
 
-        if (!stepper[deviceNum])
+        if (!stepper_present[deviceNum])
         {
           numSteppers++; // assumes steppers are added in order 0 -> 5
         }
 
         if (interfaceType == FirmataStepper::DRIVER || interfaceType == FirmataStepper::TWO_WIRE)
         {
-          stepper[deviceNum] = new FirmataStepper(interface, stepsPerRev, directionPin, stepPin);
+          stepper_present[deviceNum] = 1; // new FirmataStepper(interface, stepsPerRev, directionPin, stepPin);
         }
         else if (interfaceType == FirmataStepper::FOUR_WIRE)
         {
@@ -625,8 +637,9 @@ void sysexCallback(byte command, byte argc, byte *argv)
           motorPin4 = argv[8];
           setPinModeCallback(motorPin3, STEPPER);
           setPinModeCallback(motorPin4, STEPPER);
-          stepper[deviceNum] = new FirmataStepper(interface, stepsPerRev, directionPin, stepPin, motorPin3, motorPin4);
+          stepper_present[deviceNum] = new FirmataStepper(interface, stepsPerRev, directionPin, stepPin, motorPin3, motorPin4);
         }
+*/		
       }
       else if (stepCommand == STEPPER_STEP)
       {
@@ -634,25 +647,30 @@ void sysexCallback(byte command, byte argc, byte *argv)
         numSteps = (long)argv[3] | ((long)argv[4] << 7) | ((long)argv[5] << 14);
         stepSpeed = (argv[6] + (argv[7] << 7));
 
+		    stepper.setSpeed(stepSpeed);
+		    stepper.step(numSteps);
+		
+/*		
         if (stepDirection == 0)
         {
           numSteps *= -1;
         }
-        if (stepper[deviceNum])
+        if (stepper_present[deviceNum])
         {
           if (argc >= 8 && argc < 12)
           {
             // num steps, speed (0.01*rad/sec)
-            stepper[deviceNum]->setStepsToMove(numSteps, stepSpeed);
+            stepper_present[deviceNum]->setStepsToMove(numSteps, stepSpeed);
           }
           else if (argc == 12)
           {
             accel = (argv[8] + (argv[9] << 7));
             decel = (argv[10] + (argv[11] << 7));
             // num steps, speed (0.01*rad/sec), accel (0.01*rad/sec^2), decel (0.01*rad/sec^2)
-            stepper[deviceNum]->setStepsToMove(numSteps, stepSpeed, accel, decel);
+            stepper_present[deviceNum]->setStepsToMove(numSteps, stepSpeed, accel, decel);
           }
         }
+*/		
       }
     }
 
@@ -819,10 +837,10 @@ void systemResetCallback()
 
   for (byte i = 0; i < MAX_STEPPERS; i++)
   {
-    if (stepper[i])
+    if (stepper_present[i])
     {
-      free(stepper[i]);
-      stepper[i] = 0;
+//      free(stepper_present[i]);
+      stepper_present[i] = 0;
     }
   }
   numSteppers = 0;
@@ -881,9 +899,9 @@ void loop()
   {
     for (int i = 0; i < MAX_STEPPERS; i++)
     {
-      if (stepper[i])
+      if (stepper_present[i])
       {
-        bool done = stepper[i]->update();
+        bool done = false; // stepper_present[i]->update();
         // send command to client application when stepping is complete
         if (done)
         {
